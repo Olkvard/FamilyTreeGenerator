@@ -1,11 +1,11 @@
 import random
-from typing import List
+from typing import List, Tuple
 from .models import Person
 
 
-def pair_people(people: List[Person]):
+def pair_people(people: List[Person]) -> List[Tuple[Person, Person]]:
     """
-    Pair men and women by closest birth year.
+    Pair men and women by closest birth year, avoiding pairing siblings.
     Returns a list of (man, woman) tuples.
     """
     males = [p for p in people if p.gender == "M"]
@@ -17,7 +17,19 @@ def pair_people(people: List[Person]):
 
     while males and females:
         man = males.pop(0)
-        woman = min(females, key=lambda w: abs(w.birth_year - man.birth_year))
+
+        # Filtrar mujeres que no compartan padres con el hombre
+        eligible_women = [
+            w for w in females
+            if set(w.parents) != set(man.parents)
+        ]
+
+        # Si no hay mujeres elegibles, permitir cualquier mujer (para no bloquear)
+        if not eligible_women:
+            eligible_women = females
+
+        # Elegir la mujer con nacimiento más cercano
+        woman = min(eligible_women, key=lambda w: abs(w.birth_year - man.birth_year))
         females.remove(woman)
         couples.append((man, woman))
 
@@ -26,11 +38,13 @@ def pair_people(people: List[Person]):
 
 def create_children(parents, name_pool, year):
     """
-    Creates 1–3 children for a given couple.
+    Creates 1–6 children for a given couple.
     """
     father, mother = parents
     children = []
-    num_children = random.randint(1, 3)
+    # Dar mayor probabilidad a números altos (0..6) usando pesos crecientes
+    weights = [1, 2, 4, 8, 16, 32, 64]
+    num_children = random.choices(range(0, 7), weights=weights, k=1)[0]
 
     for _ in range(num_children):
         name = random.choice(name_pool)
@@ -57,11 +71,11 @@ def generate_family_tree(initial_people: List[Person], name_pool: List[str], gen
         new_generation = []
 
         for couple in couples:
-            children = create_children(couple, name_pool, current_year + 20)
+            children = create_children(couple, name_pool, current_year + 25)
             new_generation.extend(children)
 
         all_people.extend(new_generation)
         population = new_generation
-        current_year += 20
+        current_year += 25
 
     return all_people
