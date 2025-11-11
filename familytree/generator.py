@@ -1,36 +1,53 @@
 import random
 from typing import List, Tuple
 from .models import Person
+import bisect
 
 
 def pair_people(people: List[Person]) -> List[Tuple[Person, Person]]:
     """
-    Pair men and women by closest birth year, avoiding pairing siblings.
+    Optimized pairing:
+    - Pairs men and women by closest birth year.
+    - Avoids pairing siblings.
+    - Efficient even with thousands of people.
     Returns a list of (man, woman) tuples.
     """
-    males = [p for p in people if p.gender == "M"]
-    females = [p for p in people if p.gender == "F"]
+    # Separate and sort by birth_year
+    males = sorted([p for p in people if p.gender == "M"], key=lambda p: p.birth_year)
+    females = sorted([p for p in people if p.gender == "F"], key=lambda p: p.birth_year)
+
     couples = []
 
-    random.shuffle(males)
-    random.shuffle(females)
+    # Convert females list to tuples (birth_year, person) for bisect
+    female_years = [f.birth_year for f in females]
 
     while males and females:
         man = males.pop(0)
+        
+        # Find index of closest female by birth_year using bisect
+        idx = bisect.bisect_left(female_years, man.birth_year)
+        
+        # Candidates: idx and idx-1
+        candidates = []
+        if idx < len(females):
+            candidates.append(females[idx])
+        if idx > 0:
+            candidates.append(females[idx-1])
 
-        # Filtrar mujeres que no compartan padres con el hombre
-        eligible_women = [
-            w for w in females
-            if set(w.parents) != set(man.parents)
-        ]
+        # Filter out sisters (shared parents)
+        eligible = [w for w in candidates if set(w.parents) != set(man.parents)]
+        if not eligible:
+            # If no eligible woman, consider all females
+            eligible = females
 
-        # Si no hay mujeres elegibles, permitir cualquier mujer (para no bloquear)
-        if not eligible_women:
-            eligible_women = females
+        # Select the female closest in birth_year
+        woman = min(eligible, key=lambda w: abs(w.birth_year - man.birth_year))
 
-        # Elegir la mujer con nacimiento más cercano
-        woman = min(eligible_women, key=lambda w: abs(w.birth_year - man.birth_year))
-        females.remove(woman)
+        # Remove selected woman from list efficiently
+        remove_idx = females.index(woman)
+        females.pop(remove_idx)
+        female_years.pop(remove_idx)
+
         couples.append((man, woman))
 
     return couples
