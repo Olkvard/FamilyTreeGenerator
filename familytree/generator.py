@@ -1,5 +1,5 @@
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Set
 from .models import Person
 import time
 import json
@@ -56,6 +56,49 @@ def pair_people(people: List[Person]) -> List[Tuple[Person, Person]]:
     return couples
 
 
+def pair_people_no_incest(people: List[Person]) -> List[Tuple[Person, Person]]:
+    """
+    Pair people while avoiding siblings and first cousins.
+    Works even if not super efficient.
+    """
+    males = [p for p in people if p.gender == "M"]
+    females = [p for p in people if p.gender == "F"]
+    couples = []
+
+    if not males or not females:
+        return couples
+
+    for man in males:
+        eligible = []
+
+        # Precompute man’s grandparents
+        man_grandparents: Set[str] = set()
+        for parent in man.parents:
+            man_grandparents.update(p.id for p in parent.parents)
+
+        for woman in females:
+            # 1. No siblings
+            siblings = man.parent_hash != -1 and man.parent_hash == woman.parent_hash
+
+            # 2. No first cousins: si comparten algún abuelo
+            woman_grandparents: Set[str] = set()
+            for p in woman.parents:
+                woman_grandparents.update(pp.id for pp in p.parents)
+
+            cousins = bool(man_grandparents & woman_grandparents)
+
+            if not siblings and not cousins:
+                eligible.append(woman)
+
+        if eligible:
+            chosen = random.choice(eligible)
+            couples.append((man, chosen))
+            females.remove(chosen)  # remove to avoid reusing
+        # else: no eligible partner, skip
+
+    return couples
+
+
 def create_children(parents, name_pool, year):
     """
     Creates 1–6 children for a given couple.
@@ -92,6 +135,10 @@ def generate_family_tree_stream(initial_people: List[Person], name_pool: List[st
     with open(output_file, "w", encoding="utf-8") as f:
         f.write("[\n")
 
+        for i, person in enumerate(population):
+            json.dump(person.to_dict(), f, ensure_ascii=False, indent=2)
+            f.write(",\n")
+
     for gen_num in range(generations):
 
         print(f"\n --- Generation {gen_num + 1} --- ")
@@ -99,7 +146,7 @@ def generate_family_tree_stream(initial_people: List[Person], name_pool: List[st
 
         # Emparejar personas
         start_pair_time = time.time()
-        couples = pair_people(population)
+        couples = pair_people_no_incest(population)
         pair_time = time.time() - start_pair_time
         print(f"Paired {len(couples)} couples in {pair_time:.2f} seconds.")
 

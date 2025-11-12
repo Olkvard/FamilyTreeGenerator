@@ -19,7 +19,7 @@ def load_names():
 
 def main():
     # --- Configuración inicial ---
-    generations = 20
+    generations = 10
     output_file = "family_tree.json"
 
     # --- Cargar nombres ---
@@ -37,8 +37,8 @@ def main():
         Person("Lytheris", "F", 4),
         Person("Vynathir", "M", 4),
         Person("Drayneth", "F", 5),
-        Person("Zynariel", "F", 5),
-        Person("Erythar", "M", 5)
+    #    Person("Zynariel", "F", 5),
+    #    Person("Erythar", "M", 5)
     ]
 
     # --- Generar árbol ---
