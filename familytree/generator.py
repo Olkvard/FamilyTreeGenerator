@@ -1,50 +1,60 @@
-from collections import deque
-import bisect
 import random
 from typing import List, Tuple
 from .models import Person
 import time
 import json
+import numpy as np
 
 
 def pair_people(people: List[Person]) -> List[Tuple[Person, Person]]:
     """
-    Extremely fast pairing for same-generation populations:
-    - Pairs men and women randomly (no need to compare ages).
-    - Avoids pairing siblings (shared parents).
-    - Runs in O(n) average time.
+    Vectorized pairing using precomputed parent_hash:
+    - Pairs men and women randomly.
+    - Avoids pairing siblings (same parent_hash) unless parent_hash == -1.
+    - Works efficiently for large generations.
     """
     males = [p for p in people if p.gender == "M"]
     females = [p for p in people if p.gender == "F"]
+
+    if not males or not females:
+        return []
+
+    n_m, n_f = len(males), len(females)
+    n_pairs = min(n_m, n_f)
+
+    # Convert parent_hashes to numpy arrays
+    male_hashes = np.array([m.parent_hash for m in males], dtype=np.int64)
+    female_hashes = np.array([f.parent_hash for f in females], dtype=np.int64)
+
     couples = []
+    used_females = np.zeros(n_f, dtype=bool)
 
-    # Convert to dictionaries for constant-time parent lookup
-    female_parents = [set(f.parents) for f in females]
+    # Shuffle males to randomize pairing
+    male_indices = np.arange(n_m)
+    np.random.shuffle(male_indices)
 
-    i = 0
-    while i < len(males) and females:
-        man = males[i]
-        m_parents = set(man.parents)
+    for i in male_indices:
+        m = males[i]
+        mh = male_hashes[i]
 
-        # Buscar la primera mujer que no comparta padres
-        found = False
-        for k in range(len(females)):
-            f_parents = female_parents[k]
-            if not m_parents or not f_parents or m_parents != f_parents:
-                woman = females.pop(k)
-                couples.append((man, woman))
+        # Eligible females: different parent_hash or parent_hash == -1
+        eligible_mask = (female_hashes != mh) | (female_hashes == -1) | (mh == -1)
+        eligible_mask &= ~used_females
 
-                # Eliminar a la mujer usada moviéndola al final y cortando el array
-                female_parents.pop(k)
-                found = True
-                break
-
-        i += 1
-        if not found:
-            # Si no hay ninguna mujer elegible, pasa a la siguiente
+        eligible_idx = np.flatnonzero(eligible_mask)
+        if eligible_idx.size == 0:
             continue
 
+        # Pick a random eligible female
+        j = np.random.choice(eligible_idx)
+        used_females[j] = True
+        couples.append((m, females[j]))
+
+        if len(couples) >= n_pairs:
+            break
+
     return couples
+
 
 def create_children(parents, name_pool, year):
     """

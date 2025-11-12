@@ -5,6 +5,7 @@ from typing import List, Optional
 class Person:
     """
     Represents a single person in the family tree.
+    Stores a precomputed parent_hash for fast sibling checks.
     """
 
     def __init__(
@@ -24,6 +25,12 @@ class Person:
             max((p.generation for p in self.parents), default=-1) + 1
         )
 
+        # Compute parent hash: -1 if no parents
+        if self.parents:
+            self.parent_hash = hash(tuple(sorted(p.id for p in self.parents))) & 0xFFFFFFFF
+        else:
+            self.parent_hash = -1
+
     def add_child(self, child: "Person"):
         self.children.append(child)
 
@@ -36,6 +43,7 @@ class Person:
             "generation": self.generation,
             "parents": [p.id for p in self.parents],
             "children": [c.id for c in self.children],
+            "parent_hash": self.parent_hash,
         }
 
     def __repr__(self):
