@@ -1,10 +1,8 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-import random
 from familytree.models import Person
-from familytree.generator import generate_family_tree
-from familytree.export import save_tree_to_json
+from familytree.generator import generate_family_tree_stream
 from utils.analyze_tree import summarize_tree
 
 DATA_DIR = "data"
@@ -44,10 +42,7 @@ def main():
     ]
 
     # --- Generar árbol ---
-    tree = generate_family_tree(initial_people, all_names, generations=generations)
-
-    # --- Guardar árbol ---
-    save_tree_to_json(tree, filename=output_file)
+    generate_family_tree_stream(initial_people, all_names, generations=generations)
 
     # --- Mostrar resumen ---
     summarize_tree(output_file)
