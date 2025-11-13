@@ -19,7 +19,7 @@ def load_names():
 
 def main():
     # --- Configuración inicial ---
-    generations = 10
+    generations = 20
     output_file = "family_tree.json"
 
     # --- Cargar nombres ---
@@ -30,13 +30,13 @@ def main():
         Person("Aerythiel", "F", 0),
         Person("Bryndalor", "M", 0),
         Person("Thalyssar", "M", 0),
-        Person("Thalren", "M", 1),
+    #    Person("Thalren", "M", 1),
         Person("Almyr", "F", 1),
-        Person("Kaelyn", "F", 2),
-        Person("Jothan", "M", 3),
-        Person("Lytheris", "F", 4),
-        Person("Vynathir", "M", 4),
-        Person("Drayneth", "F", 5),
+    #    Person("Kaelyn", "F", 2),
+    #    Person("Jothan", "M", 3),
+    #    Person("Lytheris", "F", 4),
+    #    Person("Vynathir", "M", 4),
+    #    Person("Drayneth", "F", 5),
     #    Person("Zynariel", "F", 5),
     #    Person("Erythar", "M", 5)
     ]
